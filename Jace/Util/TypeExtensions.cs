@@ -8,6 +8,7 @@ namespace Jace.Util
 {
     public static class TypeExtensions
     {
+#if NETFX_CORE
         /// <summary>
         /// Get constructor for a given type matching with the parameter types provided.
         /// </summary>
@@ -39,5 +40,6 @@ namespace Jace.Util
 
             throw new Exception("No constructor was found matching with the provided parameters.");
         }
+#endif
     }
 }

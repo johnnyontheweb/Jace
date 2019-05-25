@@ -58,11 +58,11 @@ namespace Jace.Execution
             
             if (funcType.FullName.StartsWith("System.Func"))
             {
-                foreach (Type genericArgument in funcType.GenericTypeArguments)
+                foreach (Type genericArgument in funcType.GetGenericArguments())
                     if (genericArgument != typeof(double))
                         throw new ArgumentException("Only doubles are supported as function arguments.", "function");
 
-                numberOfParameters = function.GetMethodInfo().GetParameters().Length;
+                numberOfParameters = function.Method.GetParameters().Length;
             }
             else if (funcType.FullName.StartsWith(DynamicFuncName))
             {

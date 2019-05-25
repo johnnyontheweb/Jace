@@ -22,7 +22,7 @@ namespace Jace.Execution
             // The lower func reside in mscorelib, the higher ones in another assembly.
             // This is  an easy cross platform way to to have this AssemblyQualifiedName.
             FuncAssemblyQualifiedName =
-                typeof(Func<double, double, double, double, double, double, double, double, double, double>).GetTypeInfo().Assembly.FullName;
+                typeof(Func<double, double, double, double, double, double, double, double, double, double>).Assembly.FullName;
         }
 
         public double Execute(Operation operation, IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry)
@@ -94,7 +94,7 @@ namespace Jace.Execution
 
                 Func<string, FormulaContext, double> getVariableValueOrThrow = PrecompiledMethods.GetVariableValueOrThrow;
                 return Expression.Call(null,
-                    getVariableValueOrThrow.GetMethodInfo(),
+                    getVariableValueOrThrow.Method,
                     Expression.Constant(variable.Name),
                     contextParameter);
             }
@@ -144,7 +144,7 @@ namespace Jace.Execution
                 Expression @base = GenerateMethodBody(exponentation.Base, contextParameter, functionRegistry);
                 Expression exponent = GenerateMethodBody(exponentation.Exponent, contextParameter, functionRegistry);
 
-                return Expression.Call(null, typeof(Math).GetRuntimeMethod("Pow", new Type[] { typeof(double), typeof(double) }), @base, exponent);
+                return Expression.Call(null, typeof(Math).GetMethod("Pow", new Type[] { typeof(double), typeof(double) }), @base, exponent);
             }
             else if (operation.GetType() == typeof(UnaryMinus))
             {
@@ -276,7 +276,7 @@ namespace Jace.Execution
                         Expression.Property(
                             Expression.Call(
                                 getFunctionRegistry,
-                                typeof(IFunctionRegistry).GetRuntimeMethod("GetFunctionInfo", new Type[] { typeof(string) }),
+                                typeof(IFunctionRegistry).GetMethod("GetFunctionInfo", new Type[] { typeof(string) }),
                                 Expression.Constant(function.FunctionName)),
                             "Function"),
                         funcType);
@@ -286,7 +286,7 @@ namespace Jace.Execution
 
                 return Expression.Call(
                     funcInstance,
-                    funcType.GetRuntimeMethod("Invoke", parameterTypes),
+                    funcType.GetMethod("Invoke", parameterTypes),
                     arguments);
             }
             else
