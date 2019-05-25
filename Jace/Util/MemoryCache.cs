@@ -54,6 +54,12 @@ namespace Jace.Util
             this.dictionary = new ConcurrentDictionary<TKey, CacheItem>();
         }
 
+        public void Clear()
+        {
+            this.dictionary.Clear();
+            counter = 0;
+        }
+
         /// <summary>
         /// Get the value in the cache for the given key.
         /// </summary>

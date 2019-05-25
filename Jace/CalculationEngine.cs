@@ -324,6 +324,11 @@ namespace Jace
             FunctionRegistry.RegisterFunction(functionName, functionDelegate);
         }
 
+        public void AddFunction(string functionName, Func<double, double> function, bool overwritable)
+        {
+            FunctionRegistry.RegisterFunction(functionName, function, overwritable);
+        }
+
         /// <summary>
         /// Add a constant to the calculation engine.
         /// </summary>
@@ -403,6 +408,11 @@ namespace Jace
         {
             function = null;
             return cacheEnabled && executionFormulaCache.TryGetValue(formulaText, out function);
+        }
+
+        public void ClearFormulaCache()
+        {
+            executionFormulaCache.Clear();
         }
 
         /// <summary>
