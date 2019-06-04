@@ -10,3 +10,5 @@ packages/*
 *.userprefs
 .vs/
 project.lock.json
+/Jace/Execution/DynamicCompiler - Copia.no
+/Jace/Execution/DynamicCompiler.cs.bak

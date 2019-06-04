@@ -165,7 +165,7 @@ namespace Jace
             else
             {
                 Operation operation = BuildAbstractSyntaxTree(formulaText);
-                function = BuildFormula(formulaText, operation);
+                function = BuildFormula(formulaText, operation, variables);
                 return function(variables);
             }
         }
@@ -195,7 +195,7 @@ namespace Jace
             else
             {
                 Operation operation = BuildAbstractSyntaxTree(formulaText);
-                return BuildFormula(formulaText, operation);
+                return BuildFormula(formulaText, operation, null);
             }
         }
 
@@ -399,9 +399,9 @@ namespace Jace
                 return operation;
         }
 
-        private Func<IDictionary<string, double>, double> BuildFormula(string formulaText, Operation operation)
+        private Func<IDictionary<string, double>, double> BuildFormula(string formulaText, Operation operation, IDictionary<string, double> variables)
         {
-            return executionFormulaCache.GetOrAdd(formulaText, v => executor.BuildFormula(operation, this.FunctionRegistry, this.ConstantRegistry));
+            return executionFormulaCache.GetOrAdd(formulaText, v => executor.BuildFormula(operation, this.FunctionRegistry, this.ConstantRegistry, variables));
         }
 
         private bool IsInFormulaCache(string formulaText, out Func<IDictionary<string, double>, double> function)

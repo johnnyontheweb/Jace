@@ -20,7 +20,7 @@ namespace Jace.Execution
         }
         public Func<IDictionary<string, double>, double> BuildFormula(Operation operation, 
             IFunctionRegistry functionRegistry,
-            IConstantRegistry constantRegistry)
+            IConstantRegistry constantRegistry, IDictionary<string, double> vars)
         {
             return adjustVariableCaseEnabled
               ? (Func<IDictionary<string, double>, double>)(variables =>

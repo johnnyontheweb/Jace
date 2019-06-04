@@ -11,6 +11,6 @@ namespace Jace.Execution
         double Execute(Operation operation, IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry);
         double Execute(Operation operation, IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry, IDictionary<string, double> variables);
 
-        Func<IDictionary<string, double>, double> BuildFormula(Operation operation, IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry);
+        Func<IDictionary<string, double>, double> BuildFormula(Operation operation, IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry, IDictionary<string, double> variables);
     }
 }

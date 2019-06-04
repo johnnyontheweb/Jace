@@ -33,13 +33,13 @@ namespace Jace.Execution
         public double Execute(Operation operation, IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry, 
             IDictionary<string, double> variables)
         {
-            return BuildFormula(operation, functionRegistry, constantRegistry)(variables);
+            return BuildFormula(operation, functionRegistry, constantRegistry, variables)(variables);
         }
 
         public Func<IDictionary<string, double>, double> BuildFormula(Operation operation,
-            IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry)
+            IFunctionRegistry functionRegistry, IConstantRegistry constantRegistry, IDictionary<string, double> vars)
         {
-            Func<FormulaContext, double> func = BuildFormulaInternal(operation, functionRegistry);
+            Func<FormulaContext, double> func = BuildFormulaInternal(operation, functionRegistry, vars);
             return adjustVariableCaseEnabled
                 ? (Func<IDictionary<string, double>, double>)(variables =>
                 {
@@ -54,14 +54,14 @@ namespace Jace.Execution
         }
 
         private Func<FormulaContext, double> BuildFormulaInternal(Operation operation, 
-            IFunctionRegistry functionRegistry)
+            IFunctionRegistry functionRegistry, IDictionary<string, double> variables)
         {
             ParameterExpression contextParameter = Expression.Parameter(typeof(FormulaContext), "context");
 
             LabelTarget returnLabel = Expression.Label(typeof(double));
 
             Expression<Func<FormulaContext, double>> lambda = Expression.Lambda<Func<FormulaContext, double>>(
-                GenerateMethodBody(operation, contextParameter, functionRegistry),
+                GenerateMethodBody(operation, contextParameter, functionRegistry, variables),
                 contextParameter
             );
             return lambda.Compile();
@@ -70,7 +70,7 @@ namespace Jace.Execution
         
 
         private Expression GenerateMethodBody(Operation operation, ParameterExpression contextParameter,
-            IFunctionRegistry functionRegistry)
+            IFunctionRegistry functionRegistry, IDictionary<string, double> variables)
         {
             if (operation == null)
                 throw new ArgumentNullException("operation");
@@ -101,62 +101,62 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(Multiplication))
             {
                 Multiplication multiplication = (Multiplication)operation;
-                Expression argument1 = GenerateMethodBody(multiplication.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(multiplication.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(multiplication.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(multiplication.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Multiply(argument1, argument2);
             }
             else if (operation.GetType() == typeof(Addition))
             {
                 Addition addition = (Addition)operation;
-                Expression argument1 = GenerateMethodBody(addition.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(addition.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(addition.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(addition.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Add(argument1, argument2);
             }
             else if (operation.GetType() == typeof(Subtraction))
             {
                 Subtraction addition = (Subtraction)operation;
-                Expression argument1 = GenerateMethodBody(addition.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(addition.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(addition.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(addition.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Subtract(argument1, argument2);
             }
             else if (operation.GetType() == typeof(Division))
             {
                 Division division = (Division)operation;
-                Expression dividend = GenerateMethodBody(division.Dividend, contextParameter, functionRegistry);
-                Expression divisor = GenerateMethodBody(division.Divisor, contextParameter, functionRegistry);
+                Expression dividend = GenerateMethodBody(division.Dividend, contextParameter, functionRegistry, variables);
+                Expression divisor = GenerateMethodBody(division.Divisor, contextParameter, functionRegistry, variables);
 
                 return Expression.Divide(dividend, divisor);
             }
             else if (operation.GetType() == typeof(Modulo))
             {
                 Modulo modulo = (Modulo)operation;
-                Expression dividend = GenerateMethodBody(modulo.Dividend, contextParameter, functionRegistry);
-                Expression divisor = GenerateMethodBody(modulo.Divisor, contextParameter, functionRegistry);
+                Expression dividend = GenerateMethodBody(modulo.Dividend, contextParameter, functionRegistry, variables);
+                Expression divisor = GenerateMethodBody(modulo.Divisor, contextParameter, functionRegistry, variables);
 
                 return Expression.Modulo(dividend, divisor);
             }
             else if (operation.GetType() == typeof(Exponentiation))
             {
                 Exponentiation exponentation = (Exponentiation)operation;
-                Expression @base = GenerateMethodBody(exponentation.Base, contextParameter, functionRegistry);
-                Expression exponent = GenerateMethodBody(exponentation.Exponent, contextParameter, functionRegistry);
+                Expression @base = GenerateMethodBody(exponentation.Base, contextParameter, functionRegistry, variables);
+                Expression exponent = GenerateMethodBody(exponentation.Exponent, contextParameter, functionRegistry, variables);
 
                 return Expression.Call(null, typeof(Math).GetMethod("Pow", new Type[] { typeof(double), typeof(double) }), @base, exponent);
             }
             else if (operation.GetType() == typeof(UnaryMinus))
             {
                 UnaryMinus unaryMinus = (UnaryMinus)operation;
-                Expression argument = GenerateMethodBody(unaryMinus.Argument, contextParameter, functionRegistry);
+                Expression argument = GenerateMethodBody(unaryMinus.Argument, contextParameter, functionRegistry, variables);
                 return Expression.Negate(argument);
             }
             else if (operation.GetType() == typeof(And))
             {
                 And and = (And)operation;
-                Expression argument1 = Expression.NotEqual(GenerateMethodBody(and.Argument1, contextParameter, functionRegistry), Expression.Constant(0.0));
-                Expression argument2 = Expression.NotEqual(GenerateMethodBody(and.Argument2, contextParameter, functionRegistry), Expression.Constant(0.0));
+                Expression argument1 = Expression.NotEqual(GenerateMethodBody(and.Argument1, contextParameter, functionRegistry, variables), Expression.Constant(0.0));
+                Expression argument2 = Expression.NotEqual(GenerateMethodBody(and.Argument2, contextParameter, functionRegistry, variables), Expression.Constant(0.0));
 
                 return Expression.Condition(Expression.And(argument1, argument2),
                     Expression.Constant(1.0),
@@ -165,8 +165,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(Or))
             {
                 Or and = (Or)operation;
-                Expression argument1 = Expression.NotEqual(GenerateMethodBody(and.Argument1, contextParameter, functionRegistry), Expression.Constant(0.0));
-                Expression argument2 = Expression.NotEqual(GenerateMethodBody(and.Argument2, contextParameter, functionRegistry), Expression.Constant(0.0));
+                Expression argument1 = Expression.NotEqual(GenerateMethodBody(and.Argument1, contextParameter, functionRegistry, variables), Expression.Constant(0.0));
+                Expression argument2 = Expression.NotEqual(GenerateMethodBody(and.Argument2, contextParameter, functionRegistry, variables), Expression.Constant(0.0));
 
                 return Expression.Condition(Expression.Or(argument1, argument2),
                     Expression.Constant(1.0),
@@ -175,8 +175,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(LessThan))
             {
                 LessThan lessThan = (LessThan)operation;
-                Expression argument1 = GenerateMethodBody(lessThan.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(lessThan.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(lessThan.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(lessThan.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Condition(Expression.LessThan(argument1, argument2),
                     Expression.Constant(1.0),
@@ -185,8 +185,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(LessOrEqualThan))
             {
                 LessOrEqualThan lessOrEqualThan = (LessOrEqualThan)operation;
-                Expression argument1 = GenerateMethodBody(lessOrEqualThan.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(lessOrEqualThan.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(lessOrEqualThan.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(lessOrEqualThan.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Condition(Expression.LessThanOrEqual(argument1, argument2),
                     Expression.Constant(1.0),
@@ -195,8 +195,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(GreaterThan))
             {
                 GreaterThan greaterThan = (GreaterThan)operation;
-                Expression argument1 = GenerateMethodBody(greaterThan.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(greaterThan.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(greaterThan.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(greaterThan.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Condition(Expression.GreaterThan(argument1, argument2),
                     Expression.Constant(1.0),
@@ -205,8 +205,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(GreaterOrEqualThan))
             {
                 GreaterOrEqualThan greaterOrEqualThan = (GreaterOrEqualThan)operation;
-                Expression argument1 = GenerateMethodBody(greaterOrEqualThan.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(greaterOrEqualThan.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(greaterOrEqualThan.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(greaterOrEqualThan.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Condition(Expression.GreaterThanOrEqual(argument1, argument2),
                     Expression.Constant(1.0),
@@ -215,8 +215,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(Equal))
             {
                 Equal equal = (Equal)operation;
-                Expression argument1 = GenerateMethodBody(equal.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(equal.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(equal.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(equal.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Condition(Expression.Equal(argument1, argument2),
                     Expression.Constant(1.0),
@@ -225,8 +225,8 @@ namespace Jace.Execution
             else if (operation.GetType() == typeof(NotEqual))
             {
                 NotEqual notEqual = (NotEqual)operation;
-                Expression argument1 = GenerateMethodBody(notEqual.Argument1, contextParameter, functionRegistry);
-                Expression argument2 = GenerateMethodBody(notEqual.Argument2, contextParameter, functionRegistry);
+                Expression argument1 = GenerateMethodBody(notEqual.Argument1, contextParameter, functionRegistry, variables);
+                Expression argument2 = GenerateMethodBody(notEqual.Argument2, contextParameter, functionRegistry, variables);
 
                 return Expression.Condition(Expression.NotEqual(argument1, argument2),
                     Expression.Constant(1.0),
@@ -241,6 +241,37 @@ namespace Jace.Execution
                 Type[] parameterTypes;
                 Expression[] arguments;
 
+                if (function.FunctionName == "isvardefined")
+                {
+                    if (function.Arguments.Count != 1)
+                        throw new ArgumentException("Invalid number of arguments.");
+                    if (function.Arguments[0].GetType() == typeof(Variable))
+                    {
+                        Variable variable = (Variable)function.Arguments[0];
+                        double value;
+                        bool variableFound = variables.TryGetValue(variable.Name, out value);
+
+                        IntegerConstant newArgument = new IntegerConstant(variableFound ? 1 : 0);
+                        function.Arguments[0] = newArgument;
+                    }
+                    else if (function.Arguments[0].GetType() == typeof(IntegerConstant))
+                    {
+                        IntegerConstant oldArgument = (IntegerConstant)function.Arguments[0];
+                        IntegerConstant newArgument = new IntegerConstant(oldArgument.Value != 0 ? 1 : 0);
+                        function.Arguments[0] = newArgument;
+                    }
+                    else if (function.Arguments[0].GetType() == typeof(FloatingPointConstant))
+                    {
+                        FloatingPointConstant oldArgument = (FloatingPointConstant)function.Arguments[0];
+                        FloatingPointConstant newArgument = new FloatingPointConstant(oldArgument.Value != 0 ? 1 : 0);
+                        function.Arguments[0] = newArgument;
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Invalid argument for isVarDefined.");
+                    }
+                }
+
                 if (functionInfo.IsDynamicFunc)
                 {
                     funcType = typeof(DynamicFunc<double, double>);
@@ -249,7 +280,7 @@ namespace Jace.Execution
 
                     Expression[] arrayArguments = new Expression[function.Arguments.Count];
                     for (int i = 0; i < function.Arguments.Count; i++)
-                        arrayArguments[i] = GenerateMethodBody(function.Arguments[i], contextParameter, functionRegistry);
+                        arrayArguments[i] = GenerateMethodBody(function.Arguments[i], contextParameter, functionRegistry, variables);
 
                     arguments = new Expression[1];
                     arguments[0] = NewArrayExpression.NewArrayInit(typeof(double), arrayArguments);
@@ -262,7 +293,7 @@ namespace Jace.Execution
 
                     arguments = new Expression[functionInfo.NumberOfParameters];
                     for (int i = 0; i < functionInfo.NumberOfParameters; i++)
-                        arguments[i] = GenerateMethodBody(function.Arguments[i], contextParameter, functionRegistry);
+                        arguments[i] = GenerateMethodBody(function.Arguments[i], contextParameter, functionRegistry, variables);
                 }
 
                 Expression getFunctionRegistry = Expression.Property(contextParameter, "FunctionRegistry");
@@ -321,6 +352,16 @@ namespace Jace.Execution
                     return context.ConstantRegistry.GetConstantInfo(variableName).Value;
                 else
                     throw new VariableNotDefinedException($"The variable \"{variableName}\" used is not defined.");
+            }
+
+            public static double CheckIfVariableExists(string variableName, FormulaContext context)
+            {
+                if (context.Variables.TryGetValue(variableName, out double result))
+                    return 1.0;
+                else if (context.ConstantRegistry.IsConstantName(variableName))
+                    return 1.0;
+                else
+                    return 0.0;
             }
         }
     }
