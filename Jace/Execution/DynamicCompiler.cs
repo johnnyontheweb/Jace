@@ -89,14 +89,44 @@ namespace Jace.Execution
                 return Expression.Constant(constant.Value, typeof(double));
             }
             else if (operation.GetType() == typeof(Variable))
+            //{
+            //    Variable variable = (Variable)operation;
+
+            //    Func<string, FormulaContext, double> getVariableValueOrThrow = PrecompiledMethods.GetVariableValueOrThrow;
+            //    return Expression.Call(null,
+            //        getVariableValueOrThrow.Method,
+            //        Expression.Constant(variable.Name),
+            //        contextParameter);
+            //}
             {
+                Type contextType = typeof(FormulaContext);
+                Type dictionaryType = typeof(IDictionary<string, double>);
+
                 Variable variable = (Variable)operation;
 
-                Func<string, FormulaContext, double> getVariableValueOrThrow = PrecompiledMethods.GetVariableValueOrThrow;
-                return Expression.Call(null,
-                    getVariableValueOrThrow.Method,
+                Expression getVariables = Expression.Property(contextParameter, "Variables");
+                ParameterExpression value = Expression.Variable(typeof(double), "value");
+
+                Expression variableFound = Expression.Call(getVariables,
+                    dictionaryType.GetMethod("TryGetValue", new Type[] { typeof(string), typeof(double).MakeByRefType() }),
                     Expression.Constant(variable.Name),
-                    contextParameter);
+                    value);
+
+                Expression throwException = Expression.Throw(
+                    Expression.New(typeof(VariableNotDefinedException).GetConstructor(new Type[] { typeof(string) }),
+                        Expression.Constant(string.Format("The variable \"{0}\" used is not defined.", variable.Name))));
+
+                LabelTarget returnLabel = Expression.Label(typeof(double));
+
+                return Expression.Block(
+                    new[] { value },
+                    Expression.IfThenElse(
+                        variableFound,
+                        Expression.Return(returnLabel, value),
+                        throwException
+                    ),
+                    Expression.Label(returnLabel, Expression.Constant(0.0))
+                );
             }
             else if (operation.GetType() == typeof(Multiplication))
             {
